@@ -121,27 +121,32 @@
       speechSynthesis.speak(utter);
     }
 
-    async function sendToGPT(inputText) {
-      messageHistory.push({ role: "user", content: inputText });
+   async function sendToGPT(inputText) {
+  messageHistory.push({ role: "user", content: inputText });
 
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer " + OPENAI_API_KEY
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: messageHistory
-        })
-      });
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + OPENAI_API_KEY
+    },
+    body: JSON.stringify({
+      model: "gpt-3.5-turbo",
+      messages: messageHistory
+    })
+  });
 
-      const data = await response.json();
-      const reply = data.choices[0].message.content;
-      messageHistory.push({ role: "assistant", content: reply });
+  const data = await response.json();
+  console.log("📦 Dữ liệu trả về:", data); // ✅ THÊM DÒNG NÀY
 
-      return reply;
-    }
+  if (data.choices && data.choices.length > 0) {
+    const reply = data.choices[0].message.content;
+    messageHistory.push({ role: "assistant", content: reply });
+    return reply;
+  } else {
+    return "❌ Lỗi: Không nhận được phản hồi từ ChatGPT.";
+  }
+}
 
     async function sendText() {
       const input = textInput.value.trim();
