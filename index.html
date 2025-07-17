@@ -2,41 +2,118 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>JARVIS ChatGPT Voice</title>
+  <title>JARVIS Web Assistant</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
   <style>
     body {
+      margin: 0;
       background: black;
       color: cyan;
       font-family: 'Orbitron', sans-serif;
-      text-align: center;
-      padding-top: 100px;
+      overflow: hidden;
     }
-    button {
-      font-size: 20px;
-      padding: 10px 20px;
-      background: #111;
-      color: cyan;
+
+    .container {
+      max-width: 700px;
+      margin: 50px auto;
+      padding: 20px;
       border: 2px solid cyan;
+      background: rgba(0, 255, 255, 0.05);
+      box-shadow: 0 0 20px cyan;
+      border-radius: 15px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 36px;
+      text-shadow: 0 0 10px cyan;
+    }
+
+    #chat {
+      height: 300px;
+      overflow-y: auto;
+      background: rgba(0, 255, 255, 0.05);
+      padding: 15px;
+      border: 1px solid cyan;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+
+    .msg {
+      margin-bottom: 12px;
+    }
+
+    .user { color: #00f6ff; }
+    .jarvis { color: #00ff91; }
+
+    .input-area {
+      display: flex;
+      gap: 10px;
+    }
+
+    input {
+      flex: 1;
+      padding: 10px;
+      font-size: 18px;
+      background: black;
+      border: 1px solid cyan;
+      color: cyan;
+      font-family: 'Orbitron', sans-serif;
+      outline: none;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 18px;
+      background: black;
+      border: 1px solid cyan;
+      color: cyan;
       cursor: pointer;
     }
-    #output {
-      margin-top: 30px;
-      font-size: 20px;
-      padding: 20px;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
+
+    button:hover {
+      background: cyan;
+      color: black;
+    }
+
+    .glow {
+      animation: pulse 1.5s infinite alternate;
+    }
+
+    @keyframes pulse {
+      from { box-shadow: 0 0 10px cyan; }
+      to { box-shadow: 0 0 20px #00f0f0, 0 0 30px #00f0f0; }
     }
   </style>
 </head>
 <body>
-  <h1>🎙️ JARVIS Web + ChatGPT</h1>
-  <button onclick="startVoice()">🟢 Bấm để nói</button>
-  <div id="output">JARVIS đang chờ lệnh...</div>
+  <div class="container glow">
+    <h1>🤖 J.A.R.V.I.S Terminal</h1>
+
+    <div id="chat"></div>
+
+    <div class="input-area">
+      <input type="text" id="textInput" placeholder="Nhập lệnh tại đây...">
+      <button onclick="sendText()">Gửi</button>
+      <button onclick="startVoice()">🎙</button>
+    </div>
+  </div>
 
   <script>
-    const output = document.getElementById("output");
-    const OPENAI_API_KEY = "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"; // 🔐 Thay bằng API KEY của bạn
+    const chatBox = document.getElementById("chat");
+    const textInput = document.getElementById("textInput");
+    const OPENAI_API_KEY = "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"; // 🔐 Thay bằng API Key của bạn
+    const messageHistory = [
+      { role: "system", content: "Bạn là JARVIS, trợ lý AI tiếng Việt, thân thiện, phản hồi ngắn gọn." }
+    ];
+
+    function addMessage(role, text) {
+      const div = document.createElement("div");
+      div.className = "msg " + role;
+      div.textContent = (role === "user" ? "🧑 Bạn: " : "🤖 Jarvis: ") + text;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
 
     function speak(text) {
       const utter = new SpeechSynthesisUtterance(text);
@@ -44,28 +121,9 @@
       speechSynthesis.speak(utter);
     }
 
-    function startVoice() {
-      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-      recognition.lang = "vi-VN";
-      recognition.start();
-      output.innerText = "🎤 Đang lắng nghe...";
+    async function sendToGPT(inputText) {
+      messageHistory.push({ role: "user", content: inputText });
 
-      recognition.onresult = async function (event) {
-        const userInput = event.results[0][0].transcript;
-        output.innerText = "🧑 Bạn: " + userInput;
-
-        const reply = await askGPT(userInput);
-        output.innerText += "\n🤖 Jarvis: " + reply;
-        speak(reply);
-      };
-
-      recognition.onerror = function (event) {
-        output.innerText = "❌ Lỗi giọng nói: " + event.error;
-        speak("Tôi không nghe rõ, bạn nói lại nhé.");
-      };
-    }
-
-    async function askGPT(message) {
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -74,16 +132,51 @@
         },
         body: JSON.stringify({
           model: "gpt-3.5-turbo",
-          messages: [
-            { role: "system", content: "Bạn là trợ lý AI tên JARVIS, thân thiện, nói tiếng Việt." },
-            { role: "user", content: message }
-          ]
+          messages: messageHistory
         })
       });
 
       const data = await response.json();
-      return data.choices[0].message.content;
+      const reply = data.choices[0].message.content;
+      messageHistory.push({ role: "assistant", content: reply });
+
+      return reply;
     }
+
+    async function sendText() {
+      const input = textInput.value.trim();
+      if (!input) return;
+      textInput.value = "";
+      addMessage("user", input);
+      const reply = await sendToGPT(input);
+      addMessage("jarvis", reply);
+      speak(reply);
+    }
+
+    function startVoice() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = "vi-VN";
+      recognition.start();
+      addMessage("jarvis", "🎧 Đang lắng nghe...");
+
+      recognition.onresult = async function(event) {
+        const inputText = event.results[0][0].transcript;
+        addMessage("user", inputText);
+        const reply = await sendToGPT(inputText);
+        addMessage("jarvis", reply);
+        speak(reply);
+      };
+
+      recognition.onerror = function(event) {
+        addMessage("jarvis", "❌ Lỗi: " + event.error);
+        speak("Tôi không nghe rõ, bạn nói lại nhé.");
+      };
+    }
+
+    // Gửi bằng phím Enter
+    textInput.addEventListener("keydown", function(e) {
+      if (e.key === "Enter") sendText();
+    });
   </script>
 </body>
 </html>
